@@ -243,7 +243,34 @@ bool bladerf_source_c::start()
 
   _16icbuf = reinterpret_cast<int16_t *>(volk_malloc(2*_samples_per_buffer*sizeof(int16_t), alignment));
   _32fcbuf = reinterpret_cast<gr_complex *>(volk_malloc(_samples_per_buffer*sizeof(gr_complex), alignment));
-
+  bladerf_set_rfic_register(_dev.get(),0x003,0x54);
+  bladerf_set_rfic_register(_dev.get(),0x1e0,0xBF);
+  bladerf_set_rfic_register(_dev.get(),0x1e4,0xFF);
+  bladerf_set_rfic_register(_dev.get(),0x1f2,0xFF);
+  bladerf_set_rfic_register(_dev.get(),0x1e6,0x87);
+  bladerf_set_rfic_register(_dev.get(),0x1e7,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1e8,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1e9,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ea,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1eb,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ec,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ed,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ee,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ef,0x00); 
+  bladerf_set_rfic_register(_dev.get(),0x1e0,0xBF);
+  bladerf_set_rfic_register(_dev.get(),0x1e4,0xFF);
+  bladerf_set_rfic_register(_dev.get(),0x1f2,0xFF);
+  bladerf_set_rfic_register(_dev.get(),0x1e6,0x87);
+  bladerf_set_rfic_register(_dev.get(),0x1e7,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1e8,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1e9,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ea,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1eb,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ec,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ed,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ee,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x1ef,0x00);
+  bladerf_set_rfic_register(_dev.get(),0x3f6,0x03);
   _running = true;
 
   return true;
@@ -321,11 +348,17 @@ int bladerf_source_c::work(int noutput_items,
   } else {
     _failures = 0;
   }
-
+  for (int i=0; i<noutput_items; i+=2) {
+        float *fbuf=reinterpret_cast<float *>(_32fcbuf);
+        fbuf[i*2+0]=((float)((int8_t)((_16icbuf[i+0]&0xFF))))/127.0;// | ((fbuf[(i*2)+2]*127)<<8);
+        fbuf[i*2+1]=((float)((int8_t)((_16icbuf[i+1]&0xFF))))/127.0;// | ((fbuf[(i*2)+2]*127)<<8);
+        fbuf[i*2+2]=((float)((int8_t)((_16icbuf[i+0]>>8)&0xFF)))/127.0;// | ((fbuf[(i*2)+2]*127)<<8);
+        fbuf[i*2+3]=((float)((int8_t)((_16icbuf[i+1]>>8)&0xFF)))/127.0;// | ((fbuf[(i*2)+2]*127)<<8);
+  }
   // convert from int16_t to float
   // output_items is gr_complex (2x float), so num_points is 2*noutput_items
-  volk_16i_s32f_convert_32f(reinterpret_cast<float *>(_32fcbuf), _16icbuf,
-                            SCALING_FACTOR, 2*noutput_items);
+//  volk_16i_s32f_convert_32f(reinterpret_cast<float *>(_32fcbuf), _16icbuf,
+//                            SCALING_FACTOR, 2*noutput_items);
 
   // copy the samples into output_items
   gr_complex **out = reinterpret_cast<gr_complex **>(&output_items[0]);

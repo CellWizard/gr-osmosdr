@@ -551,7 +551,7 @@ double bladerf_common::set_sample_rate(double rate, bladerf_channel ch)
 {
   int status;
   struct bladerf_rational_rate rational_rate, actual;
-
+  rate /= 2.0;
   rational_rate.integer = static_cast<uint32_t>(rate);
   rational_rate.den = 10000;
   rational_rate.num = (rate - rational_rate.integer) * rational_rate.den;

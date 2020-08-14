@@ -185,9 +185,18 @@ bool bladerf_sink_c::start()
   /* Allocate memory for conversions in work() */
   size_t alignment = volk_get_alignment();
 
-  _16icbuf = reinterpret_cast<int16_t *>(volk_malloc(2*_samples_per_buffer*sizeof(int16_t), alignment));
+  //_16icbuf = reinterpret_cast<int16_t *>(volk_malloc(2*_samples_per_buffer*sizeof(int16_t), alignment));
+  _16icbuf = reinterpret_cast<int16_t *>(volk_malloc(_samples_per_buffer*sizeof(int16_t), alignment));
   _32fcbuf = reinterpret_cast<gr_complex *>(volk_malloc(_samples_per_buffer*sizeof(gr_complex), alignment));
-
+   bladerf_set_rfic_register(_dev.get(),0x002,0x54);
+   bladerf_set_rfic_register(_dev.get(),0xc2,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc3,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc4,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc5,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc6,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc7,0x00);
+   bladerf_set_rfic_register(_dev.get(),0xc8,0x00);
+   bladerf_set_rfic_register(_dev.get(),0xc9,0x00);
   _running = true;
 
   return true;
@@ -260,9 +269,13 @@ int bladerf_sink_c::work(int noutput_items,
 
   // convert floating point to fixed point and scale
   // input_items is gr_complex (2x float), so num_points is 2*noutput_items
-  volk_32f_s32f_convert_16i(_16icbuf, reinterpret_cast<float const *>(_32fcbuf),
-                            SCALING_FACTOR, 2*noutput_items);
-
+//  volk_32f_s32f_convert_16i(_16icbuf, reinterpret_cast<float const *>(_32fcbuf),
+//                            SCALING_FACTOR, 2*noutput_items);
+  for (int i=0; i<noutput_items; i+=2) {
+       float const* fbuf= reinterpret_cast<float const *>(_32fcbuf);
+       _16icbuf[i]=(uint16_t)(int8_t)(fbuf[(i*2)+0]*127) | (uint16_t)((int8_t)(fbuf[(i*2)+2]*127)<<8);
+       _16icbuf[(i)+1]=(uint16_t)(int8_t)(fbuf[(i*2)+1]*127) | (uint16_t)((int8_t)(fbuf[(i*2)+3]*127)<<8);
+  }
   // transmit the samples from the temp buffer
   if (BLADERF_FORMAT_SC16_Q11_META == _format) {
     status = transmit_with_tags(_16icbuf, noutput_items);
