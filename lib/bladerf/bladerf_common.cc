@@ -575,7 +575,9 @@ double bladerf_common::get_sample_rate(bladerf_channel ch)
   if (status != 0) {
     BLADERF_THROW_STATUS(status, "Failed to get sample rate");
   }
-  rate *= 2.0;
+  rate.integer *= 2.0;
+  rate.num *= 2.0;
+//  rate.den;
   return rate.integer + rate.num / static_cast<double>(rate.den);
 }
 
