@@ -187,7 +187,12 @@ bool bladerf_sink_c::start()
 
   _16icbuf = reinterpret_cast<int16_t *>(volk_malloc(_samples_per_buffer*sizeof(int16_t), alignment));
   _32fcbuf = reinterpret_cast<gr_complex *>(volk_malloc(_samples_per_buffer*sizeof(gr_complex), alignment));
-   bladerf_set_rfic_register(_dev.get(),0x002,0x54);
+   uint8_t BBPLL_orig=0x0;
+   uint8_t TXENFC=0x0;
+   bladerf_get_rfic_register(_dev.get(),0x00A,&BBPLL_orig);
+   bladerf_set_rfic_register(_dev.get(),0x00A,BBPLL_orig&(~0x8));
+   bladerf_get_rfic_register(_dev.get(),0x002,&TXENFC);
+   bladerf_set_rfic_register(_dev.get(),0x002,TXENFC&(~0x8));
    bladerf_set_rfic_register(_dev.get(),0xc2,0x9f);
    bladerf_set_rfic_register(_dev.get(),0xc3,0x9f);
    bladerf_set_rfic_register(_dev.get(),0xc4,0x9f);
@@ -433,12 +438,29 @@ osmosdr::meta_range_t bladerf_sink_c::get_sample_rates()
 
 double bladerf_sink_c::set_sample_rate(double rate)
 {
-  return bladerf_common::set_sample_rate(rate, chan2channel(BLADERF_TX, 0));
+
+  double ret= bladerf_common::set_sample_rate(rate/2.0, chan2channel(BLADERF_TX, 0));
+   //bladerf_set_rfic_register(_dev.get(),0x002,0x50);
+   uint8_t BBPLL_orig=0x0;
+   uint8_t TXENFC=0x0;
+   bladerf_get_rfic_register(_dev.get(),0x00A,&BBPLL_orig);
+   bladerf_set_rfic_register(_dev.get(),0x00A,BBPLL_orig&(~0x8));
+   bladerf_get_rfic_register(_dev.get(),0x002,&TXENFC);
+   bladerf_set_rfic_register(_dev.get(),0x002,TXENFC&(~0x8));
+   bladerf_set_rfic_register(_dev.get(),0xc2,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc3,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc4,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc5,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc6,0x9f);
+   bladerf_set_rfic_register(_dev.get(),0xc7,0x00);
+   bladerf_set_rfic_register(_dev.get(),0xc8,0x00);
+   bladerf_set_rfic_register(_dev.get(),0xc9,0x00);
+  return ret;
 }
 
 double bladerf_sink_c::get_sample_rate()
 {
-  return bladerf_common::get_sample_rate(chan2channel(BLADERF_TX, 0));
+  return bladerf_common::get_sample_rate(chan2channel(BLADERF_TX, 0))*2.0;
 }
 
 osmosdr::freq_range_t bladerf_sink_c::get_freq_range(size_t chan)
